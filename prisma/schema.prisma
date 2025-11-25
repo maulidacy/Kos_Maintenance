@@ -1,0 +1,63 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum KategoriLaporan {
+  AIR
+  LISTRIK
+  WIFI
+  KEBERSIHAN
+  FASILITAS_UMUM
+  LAINNYA
+}
+
+enum PrioritasLaporan {
+  RENDAH
+  SEDANG
+  TINGGI
+}
+
+enum StatusLaporan {
+  BARU
+  DIPROSES
+  DIKERJAKAN
+  SELESAI
+  DITOLAK
+}
+
+model User {
+  id           String   @id @default(uuid())
+  namaLengkap  String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  nomorKamar   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  laporan      LaporanFasilitas[]
+}
+
+model LaporanFasilitas {
+  id         String           @id @default(uuid())
+  user       User             @relation(fields: [userId], references: [id])
+  userId     String
+  kategori   KategoriLaporan
+  judul      String
+  deskripsi  String
+  fotoUrl    String?
+  prioritas  PrioritasLaporan @default(SEDANG)
+  status     StatusLaporan    @default(BARU)
+  lokasi     String
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+}
