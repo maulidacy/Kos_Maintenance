@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { registerSchema } from '@/lib/validation';
@@ -10,18 +12,19 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid input', details: parsed.error.flatten() },
-        { status: 400 }
+        { error: 'Input tidak valid', details: parsed.error.flatten() },
+        { status: 400 },
       );
     }
 
     const { namaLengkap, email, password, nomorKamar } = parsed.data;
 
+    // cek apakah email sudah dipakai
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json(
         { error: 'Email sudah digunakan' },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -39,13 +42,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       { message: 'Registrasi berhasil' },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
-    console.error('Register error:', error);
+    console.error('Register API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

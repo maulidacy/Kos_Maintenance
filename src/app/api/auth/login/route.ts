@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { loginSchema } from '@/lib/validation';
@@ -10,22 +12,27 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid input', details: parsed.error.flatten() },
-        { status: 400 }
+        { error: 'Input tidak valid', details: parsed.error.flatten() },
+        { status: 400 },
       );
     }
 
     const { email, password } = parsed.data;
 
     const user = await prisma.user.findUnique({ where: { email } });
-
     if (!user) {
-      return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Email atau password salah' },
+        { status: 401 },
+      );
     }
 
     const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
-      return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Email atau password salah' },
+        { status: 401 },
+      );
     }
 
     const token = signJwt({
@@ -34,12 +41,19 @@ export async function POST(req: NextRequest) {
       email: user.email,
     });
 
-    const response = NextResponse.json(
-      { user },
-      { status: 200 }
+    const res = NextResponse.json(
+      {
+        user: {
+          id: user.id,
+          namaLengkap: user.namaLengkap,
+          email: user.email,
+          role: user.role,
+        },
+      },
+      { status: 200 },
     );
 
-    response.cookies.set('token', token, {
+    res.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -47,9 +61,12 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
     });
 
-    return response;
+    return res;
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Login API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
