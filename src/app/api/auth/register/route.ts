@@ -20,14 +20,14 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json(
-        { error: 'Email already registered' },
+        { error: 'Email sudah digunakan' },
         { status: 409 }
       );
     }
 
     const passwordHash = await hashPassword(password);
 
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         namaLengkap,
         email,
@@ -35,17 +35,14 @@ export async function POST(req: NextRequest) {
         nomorKamar: nomorKamar || null,
         role: 'USER',
       },
-      select: {
-        id: true,
-        namaLengkap: true,
-        email: true,
-        role: true,
-      },
     });
 
-    return NextResponse.json({ user }, { status: 201 });
+    return NextResponse.json(
+      { message: 'Registrasi berhasil' },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error(error);
+    console.error('Register error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

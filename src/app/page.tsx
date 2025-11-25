@@ -1,65 +1,100 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+export default function HomePage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const features = [
+    {
+      title: 'Laporkan Cepat',
+      desc: 'Penghuni dapat membuat laporan hanya dalam beberapa klik, lengkap dengan prioritas dan lokasi kamar.',
+    },
+    {
+      title: 'Pantau Status',
+      desc: 'Admin dapat mengubah status laporan: baru, diproses, dikerjakan, selesai, atau ditolak.',
+    },
+    {
+      title: 'Mode Konsistensi',
+      desc: 'Strong (Supabase), eventual & weak consistency (Neon) untuk laporan & statistik.',
+    },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      {/* Background gradient statis */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_#4f46e5_0%,_#020617_60%)] opacity-80" />
+
+      {/* Glow lembut kiri-atas */}
+      <div className="soft-glow absolute -top-40 -left-32 h-64 w-64 rounded-full bg-indigo-500/25 blur-3xl" />
+      {/* Glow lembut kanan-bawah */}
+      <div className="soft-glow absolute bottom-[-80px] right-[-40px] h-80 w-80 rounded-full bg-sky-500/20 blur-3xl" />
+
+      <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 py-20 text-center">
+        {/* Header */}
+        <header
+          className={`space-y-4 transition-all duration-900 ease-out ${
+            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+          }`}
+        >
+          <p className="text-xs font-semibold tracking-wide text-indigo-300 uppercase">
+            Sistem Pelaporan Fasilitas Kos
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-300 to-sky-300 bg-clip-text text-transparent drop-shadow">
+            Kos Maintenance & Complaint System
+          </h1>
+
+          <p className="max-w-2xl mx-auto text-sm md:text-base text-slate-300 leading-relaxed">
+            Laporkan masalah air, listrik, WiFi, kebersihan, dan fasilitas umum
+            dengan cepat. Admin dapat memantau dan mengelola status laporan
+            secara realtime.
+          </p>
+        </header>
+
+        {/* CTA Buttons */}
+        <div
+          className={`mt-8 flex flex-col sm:flex-row gap-3 transition-all duration-900 ease-out ${
+            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+          style={{ transitionDelay: mounted ? '120ms' : '0ms' }}
+        >
+          <Link
+            href="/login"
+            className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 active:scale-[0.98] transition-all"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Masuk Penghuni / Admin
+          </Link>
+          <Link
+            href="/register"
+            className="rounded-xl border border-indigo-300/30 bg-white/10 backdrop-blur px-6 py-3 font-semibold text-indigo-200 shadow-lg hover:bg-white/20 active:scale-[0.98] transition-all"
           >
-            Documentation
-          </a>
+            Daftar Penghuni Baru
+          </Link>
         </div>
-      </main>
-    </div>
+
+        {/* Feature cards */}
+        <section className="grid w-full gap-4 md:grid-cols-3 mt-12 px-2 md:px-4">
+          {features.map((item, i) => (
+            <div
+              key={item.title}
+              className={`rounded-2xl border border-white/10 bg-slate-900/40 p-4 shadow-xl backdrop-blur transform transition-all duration-900 ease-out ${
+                mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+              } hover:-translate-y-1 hover:shadow-indigo-500/20`}
+              style={{ transitionDelay: mounted ? `${200 + i * 130}ms` : '0ms' }}
+            >
+              <h2 className="text-lg font-semibold text-indigo-200">
+                {item.title}
+              </h2>
+              <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+                {item.desc}
+              </p>
+            </div>
+          ))}
+        </section>
+      </div>
+    </main>
   );
 }

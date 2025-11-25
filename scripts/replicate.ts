@@ -4,15 +4,10 @@
  * NOTE: For demo / educational purpose. In production you'd use better change tracking.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma, prismaReplica } from '../src/lib/prisma';
 
-const primary = new PrismaClient({
-  datasources: { db: { url: process.env.DATABASE_URL! } },
-});
-
-const replica = new PrismaClient({
-  datasources: { db: { url: process.env.REPLICA_DATABASE_URL! } },
-});
+const primary = prisma;
+const replica = prismaReplica;
 
 async function replicate() {
   console.log('Starting replication...');

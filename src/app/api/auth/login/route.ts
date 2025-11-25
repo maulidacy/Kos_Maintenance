@@ -17,23 +17,15 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = parsed.data;
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 });
     }
 
     const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 });
     }
 
     const token = signJwt({
@@ -43,18 +35,10 @@ export async function POST(req: NextRequest) {
     });
 
     const response = NextResponse.json(
-      {
-        user: {
-          id: user.id,
-          namaLengkap: user.namaLengkap,
-          email: user.email,
-          role: user.role,
-        },
-      },
+      { user },
       { status: 200 }
     );
 
-    // HTTP-only cookie
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -66,9 +50,6 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
