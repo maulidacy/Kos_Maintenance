@@ -1,19 +1,26 @@
-// src/lib/validation.ts
 import { z } from 'zod';
 
+// ==================================================
+// REGISTER
+// ==================================================
 export const registerSchema = z.object({
-  namaLengkap: z.string().min(3).max(100),
+  namaLengkap: z.string().trim().min(3).max(100),
   email: z.string().email(),
   password: z.string().min(8).max(100),
-  nomorKamar: z.string().max(20).optional().or(z.literal('')),
+  nomorKamar: z.string().trim().max(20).optional().or(z.literal('')),
 });
 
+// ==================================================
+// LOGIN
+// ==================================================
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
 
-// dipakai untuk POST /api/reports
+// ==================================================
+// CREATE REPORT  (USER membuat laporan baru)
+// ==================================================
 export const createReportSchema = z.object({
   kategori: z.enum([
     'AIR',
@@ -23,32 +30,65 @@ export const createReportSchema = z.object({
     'FASILITAS_UMUM',
     'LAINNYA',
   ]),
-  judul: z.string().min(3, 'Judul minimal 3 karakter').max(200),
-  deskripsi: z.string().min(5, 'Deskripsi minimal 5 karakter').max(2000),
-  // supaya tidak rewel, boleh kosong / string biasa / URL valid
+
+  judul: z
+    .string()
+    .trim()
+    .min(3, 'Judul minimal 3 karakter')
+    .max(200),
+
+  deskripsi: z
+    .string()
+    .trim()
+    .min(5, 'Deskripsi minimal 5 karakter')
+    .max(2000),
+
   fotoUrl: z
-    .union([
-      z.string().url().max(500),
-      z.string().max(500),
-      z.literal(''),
-      z.undefined(),
-    ])
-    .optional(),
+    .string()
+    .trim()
+    .url()
+    .max(500)
+    .optional()
+    .or(z.literal('')),
+
   prioritas: z.enum(['RENDAH', 'SEDANG', 'TINGGI']),
-  lokasi: z.string().min(1, 'Lokasi wajib diisi').max(100),
+
+  lokasi: z
+    .string()
+    .trim()
+    .min(1, 'Lokasi wajib diisi')
+    .max(100),
 });
 
-// dipakai untuk PUT /api/reports/[id]
+// ==================================================
+// UPDATE STATUS (ADMIN)
+// ==================================================
 export const updateReportStatusSchema = z.object({
   status: z.enum(['BARU', 'DIPROSES', 'DIKERJAKAN', 'SELESAI', 'DITOLAK']),
 });
 
-// Update konten laporan oleh penghuni (tanpa mengubah status)
+// ==================================================
+// UPDATE REPORT (USER) — tanpa status
+// ==================================================
 export const updateReportUserSchema = z.object({
-  judul: z.string().min(5).max(200).optional(),
-  deskripsi: z.string().min(5, 'Deskripsi minimal 5 karakter').max(2000).optional(),
-  fotoUrl: z.string().url().optional().or(z.literal('')),
-  prioritas: z.enum(['RENDAH', 'SEDANG', 'TINGGI']).optional(),
-  lokasi: z.string().min(1).max(100).optional(),
-});
+  judul: z.string().trim().min(3).max(200).optional(),
 
+  deskripsi: z
+    .string()
+    .trim()
+    .min(5, 'Deskripsi minimal 5 karakter')
+    .max(2000)
+    .optional(),
+
+  fotoUrl: z
+    .string()
+    .trim()
+    .url()
+    .max(500)
+    .optional()
+    .or(z.literal('')),
+
+  prioritas: z.enum(['RENDAH', 'SEDANG', 'TINGGI']).optional(),
+
+  lokasi: z.string().trim().min(1).max(100).optional(),
+});

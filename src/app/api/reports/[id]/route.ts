@@ -139,6 +139,15 @@ export async function PUT(req: NextRequest, ctx: RouteContext) {
       const updated = await prisma.laporanFasilitas.update({
         where: { id },
         data: updateData,
+        include: {
+          user: {
+            select: {
+              namaLengkap: true,
+              nomorKamar: true,
+              email: true,
+            },
+          },
+        },
       });
 
       return NextResponse.json({ report: updated }, { status: 200 });
@@ -186,6 +195,15 @@ export async function PUT(req: NextRequest, ctx: RouteContext) {
     const updated = await prisma.laporanFasilitas.update({
       where: { id },
       data: parsedUserUpdate.data,
+      include: {
+        user: {
+          select: {
+            namaLengkap: true,
+            nomorKamar: true,
+            email: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json({ report: updated }, { status: 200 });
@@ -231,7 +249,10 @@ export async function DELETE(req: NextRequest, ctx: RouteContext) {
     if (user.role === 'ADMIN') {
       await prisma.laporanFasilitas.delete({ where: { id } });
 
-      return NextResponse.json({ ok: true }, { status: 200 });
+      return NextResponse.json(
+        { ok: true, message: 'Laporan berhasil dihapus.' },
+        { status: 200 },
+      );
     }
 
     // =============== USER (penghuni) ===============

@@ -6,6 +6,7 @@ import { prisma, prismaReplica } from '@/lib/prisma';
 import { requireAuth, requireAdmin } from '@/lib/roleGuard';
 import { createReportSchema } from '@/lib/validation';
 
+// ======================= GET /api/reports =======================
 export async function GET(req: NextRequest) {
   try {
     const mode = (req.nextUrl.searchParams.get('mode') || 'strong') as
@@ -75,12 +76,37 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// ======================= POST /api/reports =======================
 export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth(req);
-    const body = await req.json();
-    const parsed = createReportSchema.safeParse(body);
 
+    // 1. Ambil body mentah dulu
+    let raw: any = null;
+    try {
+      raw = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Body tidak valid (bukan JSON)' },
+        { status: 400 },
+      );
+    }
+
+    if (!raw || typeof raw !== 'object') {
+      return NextResponse.json({ error: 'Body tidak valid' }, { status: 400 });
+    }
+
+    // 2. Jika lokasi kosong → default dari nomorKamar user
+    if (
+      !raw.lokasi ||
+      typeof raw.lokasi !== 'string' ||
+      raw.lokasi.trim() === ''
+    ) {
+      raw.lokasi = user.nomorKamar || 'Tidak diketahui';
+    }
+
+    // 3. Validasi dengan Zod
+    const parsed = createReportSchema.safeParse(raw);
     if (!parsed.success) {
       const flat = parsed.error.flatten();
       console.error('Create report validation error:', flat);
@@ -90,18 +116,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { kategori, judul, deskripsi, fotoUrl, prioritas, lokasi } =
-      parsed.data;
+    const data = parsed.data;
 
+    // 4. Simpan ke DB
     const report = await prisma.laporanFasilitas.create({
       data: {
         userId: user.id,
-        kategori,
-        judul,
-        deskripsi,
-        fotoUrl: fotoUrl || null,
-        prioritas,
-        lokasi,
+        kategori: data.kategori,
+        judul: data.judul,
+        deskripsi: data.deskripsi,
+        fotoUrl:
+          data.fotoUrl && data.fotoUrl !== '' ? data.fotoUrl : null,
+        prioritas: data.prioritas,
+        lokasi: data.lokasi,
       },
     });
 

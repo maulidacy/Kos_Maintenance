@@ -15,7 +15,7 @@ export default function NewReportPage() {
   const [form, setForm] = useState({
     kategori: 'AIR',
     judul: '',
-    deskripsi: '',
+    deskripsi: '',      // ✅ JANGAN pakai deskripsi.trim() di sini
     fotoUrl: '',
     prioritas: 'SEDANG',
     lokasi: '',
@@ -38,19 +38,31 @@ export default function NewReportPage() {
     setIsSubmitting(true);
     setError(null);
 
+    // ✅ Trim dulu sebelum dikirim ke API
+    const payload = {
+      kategori: form.kategori,
+      judul: form.judul.trim(),
+      deskripsi: form.deskripsi.trim(),
+      fotoUrl: form.fotoUrl.trim() || undefined,
+      prioritas: form.prioritas,
+      lokasi: form.lokasi.trim(),
+    };
+
+    // ✅ Validasi cepat di sisi client biar user dapat pesan jelas
+    if (payload.deskripsi.length < 5) {
+      setIsSubmitting(false);
+      setError('Deskripsi minimal 5 karakter (setelah spasi di depan/belakang dihapus).');
+      return;
+    }
+
     try {
+      // Debug optional: lihat apa yang dikirim
+      console.log('Create report payload:', payload);
+
       const res = await fetch('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-
-          kategori: form.kategori, // 'AIR' | 'LISTRIK' | ...
-          judul: form.judul,
-          deskripsi: form.deskripsi,
-          fotoUrl: form.fotoUrl || undefined,
-          prioritas: form.prioritas, // 'RENDAH' | 'SEDANG' | 'TINGGI'
-          lokasi: form.lokasi,
-        }),
+        body: JSON.stringify(payload),
       });
 
       let data: CreateReportResponse | null = null;

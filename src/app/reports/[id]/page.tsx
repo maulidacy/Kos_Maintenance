@@ -133,38 +133,35 @@ export default function ReportDetailPage() {
   }
 
   async function handleDelete() {
-    if (!report) return;
-    const confirmDelete = window.confirm(
-      'Yakin ingin menghapus laporan ini? Tindakan ini tidak bisa dibatalkan.',
-    );
-    if (!confirmDelete) return;
+    if (!confirm('Yakin ingin menghapus laporan ini?')) return;
 
-    setDeleting(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const res = await fetch(`/api/reports/${report.id}`, {
+      const res = await fetch(`/api/reports/${reportId}`, {
         method: 'DELETE',
       });
 
-      const data: { success?: boolean } & ApiError = await res.json();
+      let data: { ok?: boolean; message?: string; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // jika berhasil tapi body kosong
+      }
 
-      if (!res.ok || !data.success) {
+      if (!res.ok || data.error) {
         setError(
           data.error ||
-            'Gagal menghapus laporan. Pastikan status masih BARU atau Anda admin.',
+          'Gagal menghapus laporan. Pastikan status masih BARU atau Anda admin.',
         );
         return;
       }
 
-      // setelah hapus, kembali ke list
-      router.push('/reports');
+      router.push('/reports'); // redirect ke halaman daftar report
     } catch (err) {
-      console.error('DELETE error:', err);
-      setError('Terjadi kesalahan saat menghapus laporan.');
-    } finally {
-      setDeleting(false);
+      console.error(err);
+      setError('Terjadi kesalahan jaringan saat menghapus laporan.');
     }
   }
 
@@ -385,17 +382,30 @@ export default function ReportDetailPage() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                 Info Pelapor
               </p>
-              {report?.user ? (
+              {report ? (
                 <ul className="mt-2 space-y-1 text-slate-200">
-                  <li>{report.user.namaLengkap}</li>
-                  {report.user.nomorKamar && (
-                    <li className="text-slate-300">
-                      Kamar: {report.user.nomorKamar}
+                  {/* Nama pelapor (kalau ada) */}
+                  {report.user?.namaLengkap && <li>{report.user.namaLengkap}</li>}
+
+                  {/* LOKASI LAPORAN → ini yang harus SELALAS dengan form */}
+                  {report.lokasi && (
+                    <li className="text-slate-300">Lokasi: {report.lokasi}</li>
+                  )}
+
+                  {/* Opsional: kamar terdaftar di profil, kalau berbeda dari lokasi laporan */}
+                  {report.user?.nomorKamar &&
+                    report.user.nomorKamar !== report.lokasi && (
+                      <li className="text-slate-400 text-[11px]">
+                        Kamar terdaftar: {report.user.nomorKamar}
+                      </li>
+                    )}
+
+                  {/* Email pelapor */}
+                  {report.user?.email && (
+                    <li className="text-slate-400 text-[11px]">
+                      {report.user.email}
                     </li>
                   )}
-                  <li className="text-slate-400 text-[11px]">
-                    {report.user.email}
-                  </li>
                 </ul>
               ) : (
                 <p className="mt-2 text-slate-300">
@@ -403,7 +413,6 @@ export default function ReportDetailPage() {
                 </p>
               )}
             </div>
-
             {report?.fotoUrl && (
               <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-3 text-xs">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
