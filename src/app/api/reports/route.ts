@@ -1,11 +1,11 @@
+// src/app/api/reports/route.ts
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma, prismaReplica } from '@/lib/prisma';
 import { requireAuth, requireAdmin } from '@/lib/roleGuard';
 import { createReportSchema } from '@/lib/validation';
 
-export const runtime = 'nodejs';
-
-// GET: list laporan (mode strong/eventual/weak)
 export async function GET(req: NextRequest) {
   try {
     const mode = (req.nextUrl.searchParams.get('mode') || 'strong') as
@@ -17,14 +17,22 @@ export async function GET(req: NextRequest) {
     const kategori = req.nextUrl.searchParams.get('kategori') || undefined;
     const isAdminList = req.nextUrl.searchParams.get('admin') === '1';
 
-    // DI SINI: kirim req ke guard
-    const user = await (isAdminList ? requireAdmin(req) : requireAuth(req));
+    // 🔐 auth: kalau admin=1 wajib admin, kalau tidak cukup user biasa
+    const user = isAdminList
+      ? await requireAdmin(req)
+      : await requireAuth(req);
 
-    const client = mode === 'strong' ? prisma : prismaReplica;
+    // 🔁 pilih DB client berdasarkan mode
+    const client =
+      mode === 'strong'
+        ? prisma
+        : prismaReplica ?? prisma; // fallback kalau replica belum diset
 
     const where: any = {};
     if (status) where.status = status;
     if (kategori) where.kategori = kategori;
+
+    // user biasa hanya lihat laporan milik sendiri
     if (!isAdminList) {
       where.userId = user.id;
     }
@@ -60,22 +68,24 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     console.error('Reports GET error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
-
-// Penghuni buat laporan – SELALU ke primary (Supabase)
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth(req); // baca user dari cookie token
+    const user = await requireAuth(req);
     const body = await req.json();
-
     const parsed = createReportSchema.safeParse(body);
 
     if (!parsed.success) {
+      const flat = parsed.error.flatten();
+      console.error('Create report validation error:', flat);
       return NextResponse.json(
-        { error: 'Input tidak valid', details: parsed.error.flatten() },
+        { error: 'Invalid input', details: flat },
         { status: 400 },
       );
     }
@@ -96,11 +106,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ report }, { status: 201 });
-  } catch (err: any) {
-    console.error('Reports POST error:', err);
-    if (err.message === 'UNAUTHENTICATED') {
+  } catch (error: any) {
+    if (error?.message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
     }
+    console.error('Reports POST error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

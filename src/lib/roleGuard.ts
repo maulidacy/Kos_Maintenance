@@ -1,3 +1,4 @@
+// src/lib/roleGuard.ts
 import type { NextRequest } from 'next/server';
 import { getCurrentUser } from './auth';
 

@@ -1,3 +1,4 @@
+// src/lib/auth.ts
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import type { NextRequest } from 'next/server';
@@ -34,11 +35,8 @@ export function verifyJwt(token: string): JwtPayload | null {
   }
 }
 
-/**
- * Ambil user dari JWT cookie "token" yang ada di NextRequest.
- */
+// PENTING: pakai req.cookies, bukan cookies() dari next/headers
 export async function getCurrentUser(req: NextRequest) {
-  // Ambil cookie "token" dari request
   const token = req.cookies.get('token')?.value;
   if (!token) return null;
 
@@ -49,6 +47,5 @@ export async function getCurrentUser(req: NextRequest) {
     where: { id: payload.userId },
   });
 
-  if (!user) return null;
   return user;
 }
