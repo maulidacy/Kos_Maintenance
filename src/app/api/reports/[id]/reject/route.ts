@@ -25,11 +25,11 @@ export async function POST(
     const now = new Date();
 
     const updated = await prisma.$transaction(async (tx) => {
-      // Reject hanya jika bukan SELESAI dan bukan DITOLAK
+      // Reject hanya jika status masih BARU
       const result = await tx.laporanFasilitas.updateMany({
         where: {
           id: reportId,
-          status: { notIn: ['SELESAI', 'DITOLAK'] },
+          status: 'BARU',
         },
         data: { status: 'DITOLAK' },
       });
@@ -42,7 +42,8 @@ export async function POST(
 
         if (!existing) return { error: 'NOT_FOUND' as const };
         if (existing.status === 'SELESAI') return { error: 'DONE' as const };
-        return { error: 'ALREADY_REJECTED' as const };
+        if (existing.status === 'DITOLAK') return { error: 'ALREADY_REJECTED' as const };
+        return { error: 'INVALID_STATUS' as const }; // DIPROSES / DIKERJAKAN
       }
 
       await tx.laporanEvent.create({
@@ -75,6 +76,12 @@ export async function POST(
       if (updated.error === 'DONE') {
         return NextResponse.json(
           { error: 'Laporan sudah selesai, tidak bisa ditolak.' },
+          { status: 400 }
+        );
+      }
+      if (updated.error === 'INVALID_STATUS') {
+        return NextResponse.json(
+          { error: 'Reject hanya bisa dilakukan saat laporan masih BARU (belum di-receive).' },
           { status: 400 }
         );
       }

@@ -42,6 +42,7 @@ export default function AdminReportsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   const [checkingRole, setCheckingRole] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -77,50 +78,52 @@ export default function AdminReportsPage() {
   }, [router]);
 
   async function load(opts?: { silent?: boolean }) {
-  const silent = opts?.silent ?? false;
+    const silent = opts?.silent ?? false;
 
-  if (!silent) {
-    setLoading(true);
-    setError(null);
-  }
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
 
-  try {
-    const res = await fetch(
-      `/api/reports?admin=1&mode=strong&page=${page}&limit=${LIMIT}`,
-      { credentials: 'include' }
-    );
-    const data = await res.json();
+    try {
+      const res = await fetch(
+        `/api/reports?admin=1&mode=strong&page=${page}&limit=${LIMIT}`,
+        { credentials: 'include' }
+      );
+      const data = await res.json();
 
-    if (!res.ok) {
+      if (!res.ok) {
+        if (!silent) {
+          setError(data.error || 'Gagal memuat laporan.');
+          setReports([]);
+          setPagination(null);
+        }
+        return;
+      }
+
+      setReports(data.reports || []);
+      setPagination(data.pagination || null);
+      setLastUpdatedAt(new Date());
+
+      // teknisi hanya perlu fetch sekali saat load normal
       if (!silent) {
-        setError(data.error || 'Gagal memuat laporan.');
+        const resTek = await fetch('/api/admin/teknisi', {
+          credentials: 'include',
+        });
+        const dataTek = await resTek.json();
+        setTeknisi(dataTek.teknisi || []);
+      }
+    } catch (e) {
+      console.error(e);
+      if (!silent) {
+        setError('Gagal memuat data laporan / teknisi.');
         setReports([]);
         setPagination(null);
       }
-      return;
+    } finally {
+      if (!silent) setLoading(false);
     }
-
-    setReports(data.reports || []);
-    setPagination(data.pagination || null);
-
-    if (!silent) {
-      const resTek = await fetch('/api/admin/teknisi', {
-        credentials: 'include',
-      });
-      const dataTek = await resTek.json();
-      setTeknisi(dataTek.teknisi || []);
-    }
-  } catch (e) {
-    console.error(e);
-    if (!silent) {
-      setError('Gagal memuat data laporan / teknisi.');
-      setReports([]);
-      setPagination(null);
-    }
-  } finally {
-    if (!silent) setLoading(false);
   }
-}
 
   // load hanya kalau user admin
   useEffect(() => {
@@ -131,21 +134,37 @@ export default function AdminReportsPage() {
   useEffect(() => {
     if (!isAdmin) return;
 
-    let intervalId: any = null;
+    let timer: any = null;
 
-    const startTimer = setTimeout(() => {
-      intervalId = setInterval(() => {
+    function start() {
+      if (timer) return;
+      timer = setInterval(() => {
         if (document.hidden) return;
         if (busyId) return;
-        load();
+        load({ silent: true });
       }, 8000);
-    }, 3000);
+    }
+
+    function stop() {
+      if (timer) clearInterval(timer);
+      timer = null;
+    }
+
+    start();
+
+    const onVisibility = () => {
+      if (document.hidden) stop();
+      else start();
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      clearTimeout(startTimer);
-      if (intervalId) clearInterval(intervalId);
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [isAdmin, busyId, page]);
+
 
   async function handleReceive(id: string) {
     setBusyId(id);
@@ -256,6 +275,16 @@ export default function AdminReportsPage() {
             <p className="text-xs text-slate-300">
               Admin bisa menerima laporan & assign teknisi.
             </p>
+            {lastUpdatedAt && (
+              <p className="mt-1 text-[10px] text-slate-500">
+                Terakhir update: {lastUpdatedAt.toLocaleTimeString('id-ID', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })}
+              </p>
+            )}
+
           </div>
 
           <Link
@@ -358,16 +387,9 @@ export default function AdminReportsPage() {
                                   </option>
                                 ))}
                               </select>
-
-                              <button
-                                onClick={() => handleReject(r.id)}
-                                disabled={busyId === r.id}
-                                className="rounded-xl bg-red-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow hover:bg-red-700 disabled:opacity-60"
-                              >
-                                {busyId === r.id ? '...' : 'Reject'}
-                              </button>
                             </div>
                           )}
+
 
                           {r.status !== 'BARU' && r.status !== 'DIPROSES' && (
                             <span className="text-[11px] text-slate-500">

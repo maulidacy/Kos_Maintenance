@@ -1,4 +1,3 @@
-// src/app/admin/timetime/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -14,6 +13,14 @@ function toDateInputValue(d: Date) {
   const month = String(d.getUTCMonth() + 1).padStart(2, '0');
   const day = String(d.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function formatDateShort(value: string) {
+  return new Date(value).toLocaleDateString('id-ID', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  });
 }
 
 type Summary = {
@@ -34,15 +41,28 @@ type Human = {
   avgTotalMin: number;
 };
 
+type Pagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+};
+
 export default function AdminTimetimePage() {
   const [reports, setReports] = useState<any[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [human, setHuman] = useState<Human | null>(null);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
+
+  const [page, setPage] = useState(1);
+  const LIMIT = 10;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ default filter: 7 hari terakhir
+  // ✅ default range: 7 hari terakhir (UTC)
   const defaultRange = useMemo(() => {
     const now = new Date();
     const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -65,29 +85,53 @@ export default function AdminTimetimePage() {
       if (from) qs.set('from', from);
       if (to) qs.set('to', to);
 
-      const res = await fetch(`/api/admin/timetime?${qs.toString()}`, {
+      // ✅ 1) SUMMARY
+      const resSummary = await fetch(`/api/admin/timetime?${qs.toString()}`, {
         credentials: 'include',
       });
+      const dataSummary = await resSummary.json();
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || 'Gagal memuat timetime.');
+      if (!resSummary.ok) {
+        setError(dataSummary.error || 'Gagal memuat timetime.');
         setReports([]);
         setSummary(null);
         setHuman(null);
+        setPagination(null);
         return;
       }
 
-      setReports(data.reports || []);
-      setSummary(data.summary || null);
-      setHuman(data.human || null);
+      setSummary(dataSummary.summary || null);
+      setHuman(dataSummary.human || null);
+
+      // ✅ 2) DETAILS (TABLE + PAGINATION)
+      qs.set('page', String(page));
+      qs.set('limit', String(LIMIT));
+
+      const resDetails = await fetch(
+        `/api/admin/timetime/details?${qs.toString()}`,
+        {
+          credentials: 'include',
+        }
+      );
+      const dataDetails = await resDetails.json();
+
+      if (!resDetails.ok) {
+        setError(dataDetails.error || 'Gagal memuat detail laporan.');
+        setReports([]);
+        setPagination(null);
+        return;
+      }
+
+      setReports(dataDetails.reports || []);
+      setPagination(dataDetails.pagination || null);
+
     } catch (e) {
       console.error(e);
       setError('Terjadi kesalahan jaringan.');
       setReports([]);
       setSummary(null);
       setHuman(null);
+      setPagination(null);
     } finally {
       setLoading(false);
     }
@@ -96,13 +140,13 @@ export default function AdminTimetimePage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [from, to]);
+  }, [from, to, page]);
 
-  // quick filter
   function setRange(days: number) {
     const now = new Date();
     const toD = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const fromD = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (days - 1)));
+    setPage(1);
     setFrom(toDateInputValue(fromD));
     setTo(toDateInputValue(toD));
   }
@@ -111,6 +155,7 @@ export default function AdminTimetimePage() {
     const now = new Date();
     const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
+    setPage(1);
     setFrom(toDateInputValue(start));
     setTo(toDateInputValue(end));
   }
@@ -127,6 +172,13 @@ export default function AdminTimetimePage() {
         <p className="text-xs text-slate-400">
           Menghitung waktu berdasarkan timestamp: created → received → started → resolved
         </p>
+
+        {/* RANGE DISPLAY */}
+        {!loading && summary?.range && (
+          <p className="mt-2 text-[11px] text-slate-500">
+            Range: {formatDateShort(summary.range.from)} - {formatDateShort(summary.range.to)}
+          </p>
+        )}
       </header>
 
       {/* FILTER BAR */}
@@ -136,8 +188,16 @@ export default function AdminTimetimePage() {
           <input
             type="date"
             value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-100 outline-none"
+            onChange={(e) => {
+              setPage(1);
+              setFrom(e.target.value);
+            }}
+            className="
+              rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-100 outline-none
+              [color-scheme:light]
+              [&::-webkit-calendar-picker-indicator]:invert
+              [&::-webkit-calendar-picker-indicator]:opacity-90
+            "
           />
         </div>
 
@@ -146,8 +206,16 @@ export default function AdminTimetimePage() {
           <input
             type="date"
             value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-100 outline-none"
+            onChange={(e) => {
+              setPage(1);
+              setTo(e.target.value);
+            }}
+            className="
+              rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-100 outline-none
+              [color-scheme:light]
+              [&::-webkit-calendar-picker-indicator]:invert
+              [&::-webkit-calendar-picker-indicator]:opacity-90
+            "
           />
         </div>
 
@@ -187,6 +255,11 @@ export default function AdminTimetimePage() {
         </p>
       )}
 
+      {/* LOADING */}
+      {loading && (
+        <p className="text-xs text-slate-400">Memuat data...</p>
+      )}
+
       {/* SUMMARY */}
       {!loading && summary && human && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
@@ -223,9 +296,7 @@ export default function AdminTimetimePage() {
       )}
 
       {/* TABLE */}
-      {loading ? (
-        <p className="text-xs text-slate-400">Memuat data...</p>
-      ) : (
+      {!loading && (
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/80 shadow-[0_24px_80px_rgba(15,23,42,0.9)]">
           <table className="min-w-full text-left text-xs text-slate-200">
             <thead className="bg-slate-900/80 text-[11px] uppercase tracking-wide text-slate-400">
@@ -263,6 +334,33 @@ export default function AdminTimetimePage() {
               )}
             </tbody>
           </table>
+
+          {/* PAGINATION */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between gap-2 border-t border-white/10 bg-slate-900/40 px-4 py-3 text-xs text-slate-200">
+              <p className="text-slate-300">
+                Halaman {pagination.page} dari {pagination.totalPages} • Total {pagination.total}
+              </p>
+
+              <div className="flex gap-2">
+                <button
+                  disabled={!pagination.hasPrev}
+                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                  className="rounded-xl border border-white/10 bg-slate-900/70 px-3 py-1.5 font-semibold hover:bg-slate-800 disabled:opacity-50"
+                >
+                  Prev
+                </button>
+
+                <button
+                  disabled={!pagination.hasNext}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-xl border border-white/10 bg-slate-900/70 px-3 py-1.5 font-semibold hover:bg-slate-800 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </section>
