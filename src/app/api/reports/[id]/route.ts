@@ -9,11 +9,12 @@ import {
 
 export const runtime = 'nodejs';
 
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
 // GET detail report
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest, context: RouteContext): Promise<Response> {
   try {
     const user = await requireAuth(req);
     const { id: reportId } = await context.params;
@@ -57,7 +58,7 @@ export async function GET(
       return NextResponse.json({ error: 'Laporan tidak ditemukan.' }, { status: 404 });
     }
 
-    // ✅ RULE AKSES:
+    // RULE AKSES:
     const isAdmin = user.role === 'ADMIN';
     const isOwner = report.userId === user.id;
     const isAssignedTeknisi =
@@ -68,10 +69,10 @@ export async function GET(
     }
 
     return NextResponse.json({ report }, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('GET /reports/[id] error:', err);
 
-    if (err?.message === 'UNAUTHENTICATED') {
+    if (err instanceof Error && err.message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -79,11 +80,8 @@ export async function GET(
   }
 }
 
-// ✅ UPDATE (PUT & PATCH)
-export async function PUT(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+// UPDATE (PUT)
+export async function PUT(req: NextRequest, context: RouteContext): Promise<Response> {
   try {
     const user = await requireAuth(req);
     const { id } = await context.params;
@@ -105,14 +103,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Laporan tidak ditemukan' }, { status: 404 });
     }
 
-    // ❌ TEKNISI tidak boleh update report
+    // TEKNISI tidak boleh update report
     if (user.role === 'TEKNISI') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // ✅ ADMIN: boleh update status saja
+    // ADMIN: boleh update status saja
     if (user.role === 'ADMIN') {
-      const parsed = updateReportStatusSchema.safeParse({ status: body.status });
+      const status = (body as { status?: unknown }).status;
+
+      const parsed = updateReportStatusSchema.safeParse({ status });
 
       if (!parsed.success) {
         return NextResponse.json(
@@ -129,12 +129,12 @@ export async function PUT(
       return NextResponse.json({ report: updated }, { status: 200 });
     }
 
-    // ✅ USER: hanya laporan miliknya
+    // USER: hanya laporan miliknya
     if (existing.userId !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // ✅ USER tidak boleh update status
+    // USER tidak boleh update status
     if (Object.prototype.hasOwnProperty.call(body, 'status')) {
       return NextResponse.json(
         { error: 'Pengguna tidak boleh mengubah status laporan.' },
@@ -142,7 +142,7 @@ export async function PUT(
       );
     }
 
-    // ✅ USER hanya bisa edit kalau status BARU
+    // USER hanya bisa edit kalau status BARU
     if (existing.status !== 'BARU') {
       return NextResponse.json(
         { error: 'Laporan sudah diproses, tidak bisa diubah lagi.' },
@@ -164,10 +164,10 @@ export async function PUT(
     });
 
     return NextResponse.json({ report: updated }, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('PUT /reports/[id] error:', err);
 
-    if (err?.message === 'UNAUTHENTICATED') {
+    if (err instanceof Error && err.message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -175,18 +175,13 @@ export async function PUT(
   }
 }
 
-export async function PATCH(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+// PATCH delegasi ke PUT (typing diperjelas agar Next 16 tidak error)
+export async function PATCH(req: NextRequest, context: RouteContext): Promise<Response> {
   return PUT(req, context);
 }
 
-// ✅ DELETE report
-export async function DELETE(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+// DELETE report
+export async function DELETE(req: NextRequest, context: RouteContext): Promise<Response> {
   try {
     const user = await requireAuth(req);
     const { id } = await context.params;
@@ -203,12 +198,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Laporan tidak ditemukan' }, { status: 404 });
     }
 
-    // ❌ TEKNISI tidak boleh delete report
+    // TEKNISI tidak boleh delete report
     if (user.role === 'TEKNISI') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // ✅ ADMIN boleh hapus semua
+    // ADMIN boleh hapus semua
     if (user.role === 'ADMIN') {
       await prisma.laporanFasilitas.delete({ where: { id } });
       return NextResponse.json({ ok: true }, { status: 200 });
@@ -230,10 +225,10 @@ export async function DELETE(
     await prisma.laporanFasilitas.delete({ where: { id } });
 
     return NextResponse.json({ ok: true }, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('DELETE /reports/[id] error:', err);
 
-    if (err?.message === 'UNAUTHENTICATED') {
+    if (err instanceof Error && err.message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
