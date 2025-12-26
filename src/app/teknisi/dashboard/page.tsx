@@ -104,9 +104,9 @@ export default function TeknisiDashboardPage() {
 
   // eventual consistency: polling ringan
   useEffect(() => {
-    let intervalId: any = null;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
-    const startTimer = setTimeout(() => {
+    const startTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
       intervalId = setInterval(() => {
         if (document.hidden) return;
         if (busyId) return;
@@ -212,7 +212,7 @@ export default function TeknisiDashboardPage() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={load}
+              onClick={() => load()}
               className="rounded-xl border border-white/10 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-800"
             >
               Refresh

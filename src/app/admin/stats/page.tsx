@@ -1,3 +1,4 @@
+// src/app/admin/stats/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -10,6 +11,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from 'recharts';
+import { AlertTriangle } from 'lucide-react';
 
 type Stats = {
   ok: boolean;
@@ -97,15 +99,15 @@ export default function AdminStatsPage() {
     }
   }
 
-  // ✅ load saat mode/from/to berubah
+  // load saat mode/from/to berubah
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, from, to]);
 
-  // ✅ polling silent refresh
+  // polling silent refresh
   useEffect(() => {
-    let timer: any = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
 
     function start() {
       if (timer) return;
@@ -153,7 +155,7 @@ export default function AdminStatsPage() {
     setTo(toDateInputValue(end));
   }
 
-  // ✅ chart data
+  // chart data
   const chartData = useMemo(() => {
     if (!stats?.perHari) return [];
     return stats.perHari.map((d) => ({
@@ -186,10 +188,14 @@ export default function AdminStatsPage() {
             </p>
           )}
           {stats?.mode === 'weak' && (
-            <p className="text-[11px] text-amber-300">
-              ⚠ Weak (Replica) dapat tertinggal dari Primary. Data bisa tidak lengkap.
-            </p>
+            <div className="mt-2 inline-flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 opacity-90" />
+              <span>
+                Weak (Replica) dapat tertinggal dari Primary. Data bisa tidak lengkap.
+              </span>
+            </div>
           )}
+
         </div>
 
         {/* SWITCH MODE */}
@@ -197,8 +203,8 @@ export default function AdminStatsPage() {
           <button
             onClick={() => setMode('weak')}
             className={`px-3 py-1 rounded-full transition ${mode === 'weak'
-                ? 'bg-emerald-500 text-slate-900'
-                : 'hover:bg-slate-800/80'
+              ? 'bg-emerald-500 text-slate-900'
+              : 'hover:bg-slate-800/80'
               }`}
           >
             Weak (Replica)
@@ -206,8 +212,8 @@ export default function AdminStatsPage() {
           <button
             onClick={() => setMode('strong')}
             className={`px-3 py-1 rounded-full transition ${mode === 'strong'
-                ? 'bg-emerald-500 text-slate-900'
-                : 'hover:bg-slate-800/80'
+              ? 'bg-emerald-500 text-slate-900'
+              : 'hover:bg-slate-800/80'
               }`}
           >
             Strong (Primary)
@@ -216,7 +222,8 @@ export default function AdminStatsPage() {
       </header>
 
       {/* FILTER BAR */}
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-3 text-xs">
+      <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-3 text-xs sm:flex-row sm:flex-wrap sm:items-center">
+
         <div className="flex items-center gap-2">
           <label className="text-slate-300">From</label>
           <input
@@ -295,7 +302,7 @@ export default function AdminStatsPage() {
       {!loading && stats && (
         <>
           {/* STATUS CARDS */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
             <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 shadow-lg shadow-black/30">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                 Total
@@ -331,7 +338,7 @@ export default function AdminStatsPage() {
                 Belum ada laporan pada range ini.
               </p>
             ) : (
-              <div className="mt-4 h-64 w-full">
+              <div className="mt-4 h-52 sm:h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.12} />

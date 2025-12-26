@@ -1,3 +1,4 @@
+// src/app/admin/timetime/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -50,8 +51,19 @@ type Pagination = {
   hasPrev: boolean;
 };
 
+type ReportTimeRow = {
+  id: string;
+  judul: string;
+  status: string;
+
+  createdAt?: string | null;
+  receivedAt?: string | null;
+  startedAt?: string | null;
+  resolvedAt?: string | null;
+};
+
 export default function AdminTimetimePage() {
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<ReportTimeRow[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [human, setHuman] = useState<Human | null>(null);
   const [pagination, setPagination] = useState<Pagination | null>(null);
@@ -62,7 +74,7 @@ export default function AdminTimetimePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ default range: 7 hari terakhir (UTC)
+  // default range: 7 hari terakhir (UTC)
   const defaultRange = useMemo(() => {
     const now = new Date();
     const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -85,7 +97,7 @@ export default function AdminTimetimePage() {
       if (from) qs.set('from', from);
       if (to) qs.set('to', to);
 
-      // ✅ 1) SUMMARY
+      // 1) SUMMARY
       const resSummary = await fetch(`/api/admin/timetime?${qs.toString()}`, {
         credentials: 'include',
       });
@@ -103,7 +115,7 @@ export default function AdminTimetimePage() {
       setSummary(dataSummary.summary || null);
       setHuman(dataSummary.human || null);
 
-      // ✅ 2) DETAILS (TABLE + PAGINATION)
+      // 2) DETAILS (TABLE + PAGINATION)
       qs.set('page', String(page));
       qs.set('limit', String(LIMIT));
 
@@ -122,7 +134,7 @@ export default function AdminTimetimePage() {
         return;
       }
 
-      setReports(dataDetails.reports || []);
+      setReports((dataDetails.reports as ReportTimeRow[]) || []);
       setPagination(dataDetails.pagination || null);
 
     } catch (e) {
@@ -182,8 +194,8 @@ export default function AdminTimetimePage() {
       </header>
 
       {/* FILTER BAR */}
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-3 text-xs">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-3 text-xs sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
           <label className="text-slate-300">From</label>
           <input
             type="date"
@@ -193,15 +205,16 @@ export default function AdminTimetimePage() {
               setFrom(e.target.value);
             }}
             className="
-              rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-100 outline-none
-              [color-scheme:light]
-              [&::-webkit-calendar-picker-indicator]:invert
-              [&::-webkit-calendar-picker-indicator]:opacity-90
-            "
+        w-full sm:w-auto
+        rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-100 outline-none
+        [color-scheme:light]
+        [&::-webkit-calendar-picker-indicator]:invert
+        [&::-webkit-calendar-picker-indicator]:opacity-90
+      "
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
           <label className="text-slate-300">To</label>
           <input
             type="date"
@@ -211,15 +224,16 @@ export default function AdminTimetimePage() {
               setTo(e.target.value);
             }}
             className="
-              rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-100 outline-none
-              [color-scheme:light]
-              [&::-webkit-calendar-picker-indicator]:invert
-              [&::-webkit-calendar-picker-indicator]:opacity-90
-            "
+        w-full sm:w-auto
+        rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-100 outline-none
+        [color-scheme:light]
+        [&::-webkit-calendar-picker-indicator]:invert
+        [&::-webkit-calendar-picker-indicator]:opacity-90
+      "
           />
         </div>
 
-        <div className="ml-auto flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:ml-auto">
           <button
             onClick={() => setRange(7)}
             className="rounded-xl border border-white/10 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-800"
@@ -298,46 +312,63 @@ export default function AdminTimetimePage() {
       {/* TABLE */}
       {!loading && (
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/80 shadow-[0_24px_80px_rgba(15,23,42,0.9)]">
-          <table className="min-w-full text-left text-xs text-slate-200">
-            <thead className="bg-slate-900/80 text-[11px] uppercase tracking-wide text-slate-400">
-              <tr>
-                <th className="px-4 py-3">Judul</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Response (menit)</th>
-                <th className="px-4 py-3">Repair (menit)</th>
-                <th className="px-4 py-3">Total (menit)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reports.map((r) => {
-                const response = diffMinutes(r.createdAt, r.receivedAt);
-                const repair = diffMinutes(r.startedAt, r.resolvedAt);
-                const total = diffMinutes(r.createdAt, r.resolvedAt);
-
-                return (
-                  <tr key={r.id} className="border-t border-white/5 hover:bg-slate-900/60">
-                    <td className="px-4 py-3 text-sm text-slate-100">{r.judul}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300">{r.status}</td>
-                    <td className="px-4 py-3 text-xs text-emerald-200">{response ?? '-'}</td>
-                    <td className="px-4 py-3 text-xs text-emerald-200">{repair ?? '-'}</td>
-                    <td className="px-4 py-3 text-xs text-emerald-200">{total ?? '-'}</td>
-                  </tr>
-                );
-              })}
-
-              {reports.length === 0 && (
+          <div className="w-full overflow-x-auto">
+            <table className="w-full table-fixed text-left text-xs text-slate-200">
+              <thead className="bg-slate-900/80 text-[11px] uppercase tracking-wide text-slate-400">
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                    Tidak ada data.
-                  </td>
+                  <th className="px-4 py-3 w-[45%]">Judul</th>
+                  <th className="px-4 py-3 w-[15%] hidden sm:table-cell">Status</th>
+                  <th className="px-4 py-3 w-[15%]">Response</th>
+                  <th className="px-4 py-3 w-[15%] hidden md:table-cell">Repair</th>
+                  <th className="px-4 py-3 w-[10%] hidden md:table-cell">Total</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
 
-          {/* PAGINATION */}
+              <tbody>
+                {reports.map((r) => {
+                  const response = diffMinutes(r.createdAt, r.receivedAt);
+                  const repair = diffMinutes(r.startedAt, r.resolvedAt);
+                  const total = diffMinutes(r.createdAt, r.resolvedAt);
+
+                  return (
+                    <tr key={r.id} className="border-t border-white/5 hover:bg-slate-900/60">
+                      <td className="px-4 py-3 text-sm text-slate-100 truncate">
+                        {r.judul}
+                      </td>
+
+                      <td className="px-4 py-3 text-xs text-slate-300 hidden sm:table-cell truncate">
+                        {r.status}
+                      </td>
+
+                      <td className="px-4 py-3 text-xs text-emerald-200 truncate">
+                        {response ?? '-'}m
+                      </td>
+
+                      <td className="px-4 py-3 text-xs text-emerald-200 hidden md:table-cell truncate">
+                        {repair ?? '-'}m
+                      </td>
+
+                      <td className="px-4 py-3 text-xs text-emerald-200 hidden md:table-cell truncate">
+                        {total ?? '-'}m
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {reports.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
+                      Tidak ada data.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* pagination tetap */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between gap-2 border-t border-white/10 bg-slate-900/40 px-4 py-3 text-xs text-slate-200">
+            <div className="flex flex-col gap-2 border-t border-white/10 bg-slate-900/40 px-4 py-3 text-xs text-slate-200 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
               <p className="text-slate-300">
                 Halaman {pagination.page} dari {pagination.totalPages} • Total {pagination.total}
               </p>

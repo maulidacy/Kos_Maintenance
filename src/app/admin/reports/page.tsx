@@ -134,7 +134,7 @@ export default function AdminReportsPage() {
   useEffect(() => {
     if (!isAdmin) return;
 
-    let timer: any = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
 
     function start() {
       if (timer) return;
@@ -307,16 +307,33 @@ export default function AdminReportsPage() {
           </div>
         ) : (
           <div className="rounded-3xl border border-white/10 bg-slate-950/80 shadow-[0_24px_80px_rgba(15,23,42,0.9)]">
-            <div className="overflow-x-auto overflow-y-visible">
-              <table className="min-w-full text-left text-xs text-slate-200">
-                <thead className="bg-slate-900/80 text-[11px] uppercase tracking-wide text-slate-400">
+            <div className="overflow-hidden">
+              <table className="w-full table-fixed text-left text-[11px] text-slate-200 sm:text-xs">
+                <thead className="bg-slate-900/80 text-[10px] uppercase tracking-wide text-slate-400 sm:text-[11px]">
                   <tr>
-                    <th className="px-4 py-3">Judul</th>
-                    <th className="px-4 py-3">Kategori</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Prioritas</th>
-                    <th className="px-4 py-3">Lokasi</th>
-                    <th className="px-4 py-3">Aksi</th>
+                    {/* Judul wajib tampil */}
+                    <th className="w-[40%] px-2 py-2 sm:px-4 sm:py-3">Judul</th>
+
+                    {/* Kategori hide di mobile */}
+                    <th className="hidden w-[14%] px-2 py-2 sm:table-cell sm:px-4 sm:py-3">
+                      Kategori
+                    </th>
+
+                    {/* Status wajib tampil */}
+                    <th className="w-[16%] px-2 py-2 sm:px-4 sm:py-3">Status</th>
+
+                    {/* Prioritas hide di mobile */}
+                    <th className="hidden w-[14%] px-2 py-2 sm:table-cell sm:px-4 sm:py-3">
+                      Prioritas
+                    </th>
+
+                    {/* Lokasi hide di mobile (baru muncul md) */}
+                    <th className="hidden w-[16%] px-2 py-2 md:table-cell sm:px-4 sm:py-3">
+                      Lokasi
+                    </th>
+
+                    {/* Aksi wajib tampil */}
+                    <th className="w-[28%] px-2 py-2 sm:px-4 sm:py-3">Aksi</th>
                   </tr>
                 </thead>
 
@@ -333,46 +350,67 @@ export default function AdminReportsPage() {
                         key={r.id}
                         className="border-t border-white/5 hover:bg-slate-900/60"
                       >
-                        <td className="px-4 py-3 text-sm text-slate-100">
+                        {/* Judul */}
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-slate-100">
                           <Link
                             href={`/reports/${r.id}`}
-                            className="hover:text-emerald-300 underline-offset-2 hover:underline"
+                            className="block truncate hover:text-emerald-300 hover:underline underline-offset-2"
+                            title={r.judul}
                           >
                             {r.judul}
                           </Link>
                         </td>
 
-                        <td className="px-4 py-3 text-slate-300">{r.kategori}</td>
-                        <td className="px-4 py-3 text-slate-300">{r.status}</td>
-                        <td className="px-4 py-3 text-slate-300">{r.prioritas}</td>
-                        <td className="px-4 py-3 text-slate-300">{r.lokasi}</td>
+                        {/* Kategori */}
+                        <td className="hidden px-2 py-2 sm:table-cell sm:px-4 sm:py-3 text-slate-300 truncate">
+                          {r.kategori}
+                        </td>
 
-                        <td className="px-4 py-3 relative z-50">
-                          {r.status === 'BARU' && (
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={() => handleReceive(r.id)}
-                                disabled={busyId === r.id}
-                                className="rounded-xl bg-emerald-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow hover:bg-emerald-600 disabled:opacity-60"
-                              >
-                                {busyId === r.id ? 'Processing...' : 'Receive'}
-                              </button>
+                        {/* Status */}
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-slate-300 truncate">
+                          {r.status}
+                        </td>
 
-                              <button
-                                onClick={() => handleReject(r.id)}
-                                disabled={busyId === r.id}
-                                className="rounded-xl bg-red-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow hover:bg-red-700 disabled:opacity-60"
-                              >
-                                {busyId === r.id ? '...' : 'Reject'}
-                              </button>
-                            </div>
-                          )}
+                        {/* Prioritas */}
+                        <td className="hidden px-2 py-2 sm:table-cell sm:px-4 sm:py-3 text-slate-300 truncate">
+                          {r.prioritas}
+                        </td>
 
-                          {r.status === 'DIPROSES' && (
-                            <div className="flex flex-col gap-2">
+                        {/* Lokasi */}
+                        <td className="hidden px-2 py-2 md:table-cell sm:px-4 sm:py-3 text-slate-300 truncate">
+                          {r.lokasi}
+                        </td>
+
+                        {/* AKSI */}
+                        <td className="px-2 py-2 sm:px-4 sm:py-3">
+                          <div className="flex flex-wrap items-center gap-2">
+
+                            {/* BARU: Receive + Reject */}
+                            {r.status === 'BARU' && (
+                              <>
+                                <button
+                                  onClick={() => handleReceive(r.id)}
+                                  disabled={busyId === r.id}
+                                  className="rounded-xl bg-emerald-500 px-3 py-1.5 text-[10px] sm:text-[11px] font-semibold text-white shadow hover:bg-emerald-600 disabled:opacity-60"
+                                >
+                                  {busyId === r.id ? '...' : 'Receive'}
+                                </button>
+
+                                <button
+                                  onClick={() => handleReject(r.id)}
+                                  disabled={busyId === r.id}
+                                  className="rounded-xl bg-red-600 px-3 py-1.5 text-[10px] sm:text-[11px] font-semibold text-white shadow hover:bg-red-700 disabled:opacity-60"
+                                >
+                                  {busyId === r.id ? '...' : 'Reject'}
+                                </button>
+                              </>
+                            )}
+
+                            {/* DIPROSES: Assign teknisi (NO Reject) */}
+                            {r.status === 'DIPROSES' && (
                               <select
                                 disabled={busyId === r.id}
-                                className="w-full rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-200 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
+                                className="w-full rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-[10px] sm:text-[11px] text-slate-200 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
                                 value={r.assignedToId ?? ''}
                                 onChange={(e) => {
                                   const teknisiId = e.target.value;
@@ -387,15 +425,15 @@ export default function AdminReportsPage() {
                                   </option>
                                 ))}
                               </select>
-                            </div>
-                          )}
+                            )}
 
-
-                          {r.status !== 'BARU' && r.status !== 'DIPROSES' && (
-                            <span className="text-[11px] text-slate-500">
-                              Tidak ada aksi
-                            </span>
-                          )}
+                            {/* Status lainnya tidak ada aksi */}
+                            {r.status !== 'BARU' && r.status !== 'DIPROSES' && (
+                              <span className="text-[10px] sm:text-[11px] text-slate-500">
+                                Tidak ada aksi
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
