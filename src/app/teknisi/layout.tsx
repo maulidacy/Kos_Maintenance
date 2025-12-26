@@ -1,10 +1,11 @@
+// src/app/teknisi/layout.tsx
 import type { ReactNode } from 'react';
-import TechnicianShell from './TechnicianShell';
+import TeknisiShell from './TeknisiShell';
 
 export const metadata = {
   title: 'Teknisi | Kos Maintenance',
 };
 
-export default function TechnicianLayout({ children }: { children: ReactNode }) {
-  return <TechnicianShell>{children}</TechnicianShell>;
+export default function TeknisiLayout({ children }: { children: ReactNode }) {
+  return <TeknisiShell>{children}</TeknisiShell>;
 }
