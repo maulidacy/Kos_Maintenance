@@ -5,10 +5,12 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+type FieldErrors = Record<string, string[]>;
+
 type RegisterResponse = {
   message?: string;
   error?: string;
-  details?: any;
+  details?: unknown;
 };
 
 export default function RegisterPage() {
@@ -53,12 +55,13 @@ export default function RegisterPage() {
       }
 
       if (!res.ok) {
-        const fieldErrors = data?.details?.fieldErrors;
+        const details = data?.details as { fieldErrors?: FieldErrors } | undefined;
+        const fieldErrors = details?.fieldErrors;
 
         // ambil pesan error pertama dari field manapun
         const firstError =
           fieldErrors && Object.keys(fieldErrors).length > 0
-            ? Object.values(fieldErrors)[0]?.[0]
+            ? (Object.values(fieldErrors)[0]?.[0] ?? null)
             : null;
 
         setError(firstError || data?.error || 'Gagal mendaftar, coba lagi.');
