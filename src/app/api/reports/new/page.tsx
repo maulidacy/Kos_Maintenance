@@ -6,9 +6,9 @@ import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 
 type CreateReportResponse = {
-  report?: any;
+  report?: unknown;
   error?: string;
-  details?: any;
+  details?: unknown;
 };
 
 export default function NewReportPage() {

@@ -1,3 +1,4 @@
+// src/app/api/reports/[id]/events/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/roleGuard';
@@ -16,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: 'Report ID tidak ditemukan.' }, { status: 400 });
     }
 
-    // ✅ pastikan user boleh lihat laporan ini
+    // pastikan user boleh lihat laporan ini
     const report = await prisma.laporanFasilitas.findUnique({
       where: { id: reportId },
       select: { id: true, userId: true },
@@ -51,13 +52,15 @@ export async function GET(
     });
 
     return NextResponse.json({ events }, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('GET report events error:', err);
 
-    if (err?.message === 'UNAUTHENTICATED') {
+    const message = err instanceof Error ? err.message : null;
+
+    if (message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (err?.message === 'FORBIDDEN') {
+    if (message === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

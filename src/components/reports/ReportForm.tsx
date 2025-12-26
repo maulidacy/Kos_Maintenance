@@ -116,7 +116,7 @@ export function ReportForm({ onSubmit, isSubmitting }: ReportFormProps) {
           htmlFor="lokasi"
           className="block text-xs font-medium text-slate-200"
         >
-          Lokasi / Nomor Kamar
+          Lokasi/Nomor Kamar
         </label>
         <input
           id="lokasi"
@@ -126,7 +126,7 @@ export function ReportForm({ onSubmit, isSubmitting }: ReportFormProps) {
           value={form.lokasi}
           onChange={handleChange}
           className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-          placeholder="Contoh: Kamar B-12 / Dapur lantai 2"
+          placeholder="Contoh: Kamar B-12/Dapur lantai 2"
         />
       </div>
 

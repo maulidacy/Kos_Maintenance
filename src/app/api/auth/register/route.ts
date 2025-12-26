@@ -64,12 +64,15 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 },
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Register API error (prisma):', err);
+
+    const message = err instanceof Error ? err.message : 'unknown';
+
     return NextResponse.json(
       {
         error: 'Internal server error',
-        detail: err?.message || 'unknown',
+        detail: message,
       },
       { status: 500 },
     );

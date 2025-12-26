@@ -7,8 +7,8 @@ import Link from 'next/link';
 
 type CreateReportResponse = {
   error?: string;
-  details?: any;
-  report?: any;
+  details?: unknown;
+  report?: unknown;
 };
 
 export default function NewReportPage() {
@@ -16,7 +16,7 @@ export default function NewReportPage() {
   const [form, setForm] = useState({
     kategori: 'AIR',
     judul: '',
-    deskripsi: '',      // ✅ JANGAN pakai deskripsi.trim() di sini
+    deskripsi: '',      // JANGAN pakai deskripsi.trim() di sini
     fotoUrl: '',
     prioritas: 'SEDANG',
     lokasi: '',
@@ -39,7 +39,7 @@ export default function NewReportPage() {
     setIsSubmitting(true);
     setError(null);
 
-    // ✅ Trim dulu sebelum dikirim ke API
+    // Trim dulu sebelum dikirim ke API
     const payload = {
       kategori: form.kategori,
       judul: form.judul.trim(),
@@ -49,7 +49,7 @@ export default function NewReportPage() {
       lokasi: form.lokasi.trim(),
     };
 
-    // ✅ Validasi cepat di sisi client biar user dapat pesan jelas
+    // Validasi cepat di sisi client biar user dapat pesan jelas
     if (payload.deskripsi.length < 5) {
       setIsSubmitting(false);
       setError('Deskripsi minimal 5 karakter (setelah spasi di depan/belakang dihapus).');
@@ -115,7 +115,7 @@ export default function NewReportPage() {
             href="/reports"
             className="inline-flex text-xs text-emerald-300 hover:text-emerald-200"
           >
-            ← Kembali ke daftar laporan
+            Kembali ke daftar laporan
           </Link>
         </section>
 

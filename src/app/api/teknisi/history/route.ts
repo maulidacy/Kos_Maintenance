@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireTeknisi } from '@/lib/roleGuard';
+import { Prisma, StatusLaporan } from '@prisma/client';
 
 export const runtime = 'nodejs';
 
@@ -14,9 +15,10 @@ export async function GET(req: NextRequest) {
 
     const limit = Math.min(Number(limitParam || 20), 50);
 
-    const where = {
+    // typing diperbaiki tanpa mengubah logic
+    const where: Prisma.LaporanFasilitasWhereInput = {
       assignedToId: teknisi.id,
-      status: { in: ['SELESAI', 'DITOLAK'] as any },
+      status: { in: [StatusLaporan.SELESAI, StatusLaporan.DITOLAK] },
     };
 
     const items = await prisma.laporanFasilitas.findMany({
@@ -51,7 +53,6 @@ export async function GET(req: NextRequest) {
 
     const hasMore = items.length > limit;
     const data = hasMore ? items.slice(0, limit) : items;
-
     const nextCursor = hasMore ? data[data.length - 1]?.id : null;
 
     return NextResponse.json(
@@ -62,13 +63,13 @@ export async function GET(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('GET /api/teknisi/history error:', err);
 
-    if (err?.message === 'UNAUTHENTICATED') {
+    if (err instanceof Error && err.message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (err?.message === 'FORBIDDEN') {
+    if (err instanceof Error && err.message === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

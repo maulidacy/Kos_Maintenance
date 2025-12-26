@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     const from = parseDateOnly(fromParam);
     const to = parseDateOnly(toParam);
 
-    // ✅ default range: 7 hari terakhir (UTC) untuk ringan
+    // default range: 7 hari terakhir (UTC) untuk ringan
     const now = new Date();
     const defaultTo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
     const defaultFrom = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 6));
@@ -43,11 +43,11 @@ export async function GET(req: NextRequest) {
       ? new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate() + 1))
       : defaultTo;
 
-    // ✅ limit param biar tidak berat (default 50)
+    // limit param biar tidak berat (default 50)
     const limitParam = req.nextUrl.searchParams.get('limit');
     const limit = Math.min(Math.max(parseInt(limitParam || '50', 10) || 50, 10), 200);
 
-    // ✅ Ambil laporan + timestamps + judul
+    // Ambil laporan + timestamps + judul
     const rows = await prisma.laporanFasilitas.findMany({
       where: {
         createdAt: { gte: timeFrom, lt: timeTo },
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
     summary.avgWorkMs = safeAvg(workSum, workCount);
     summary.avgTotalMs = safeAvg(totalSum, totalCount);
 
-    // ✅ RETURN reports + summary supaya UI tetap jalan
+    // RETURN reports + summary supaya UI tetap jalan
     return NextResponse.json(
       {
         ok: true,
@@ -137,13 +137,15 @@ export async function GET(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('GET /api/admin/timetime error:', err);
 
-    if (err?.message === 'UNAUTHENTICATED') {
+    const message = err instanceof Error ? err.message : null;
+
+    if (message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (err?.message === 'FORBIDDEN') {
+    if (message === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

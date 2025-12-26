@@ -1,3 +1,4 @@
+// src/app/api/admin/teknisi/route.ts
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,11 +20,13 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ teknisi }, { status: 200 });
-  } catch (error: any) {
-    if (error?.message === 'UNAUTHENTICATED') {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : null;
+
+    if (message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
     }
-    if (error?.message === 'FORBIDDEN') {
+    if (message === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -14,13 +14,20 @@ export async function GET() {
       },
       { status: 200 },
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('DB debug error:', err);
+
+    const message = err instanceof Error ? err.message : 'unknown';
+    const code =
+      typeof err === 'object' && err !== null && 'code' in err
+        ? (err as { code?: unknown }).code
+        : null;
+
     return NextResponse.json(
       {
         ok: false,
-        error: err?.message || 'unknown',
-        code: err?.code || null,
+        error: message,
+        code,
       },
       { status: 500 },
     );

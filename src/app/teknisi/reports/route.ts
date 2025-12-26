@@ -27,11 +27,15 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ reports }, { status: 200 });
-  } catch (error: any) {
-    if (error?.message === 'UNAUTHENTICATED')
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : undefined;
+
+    if (message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
-    if (error?.message === 'FORBIDDEN')
+    }
+    if (message === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     console.error('Teknisi reports GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

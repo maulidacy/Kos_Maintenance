@@ -2,6 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireTeknisi } from '@/lib/roleGuard';
+import type {
+  Prisma,
+  StatusLaporan,
+  PrioritasLaporan,
+  KategoriLaporan,
+} from '@prisma/client';
 
 export const runtime = 'nodejs';
 
@@ -10,25 +16,25 @@ export async function GET(req: NextRequest) {
     const teknisi = await requireTeknisi(req);
 
     const tab = req.nextUrl.searchParams.get('tab');
-    const status = req.nextUrl.searchParams.get('status');
-    const prioritas = req.nextUrl.searchParams.get('prioritas');
-    const kategori = req.nextUrl.searchParams.get('kategori');
+    const statusParam = req.nextUrl.searchParams.get('status');
+    const prioritasParam = req.nextUrl.searchParams.get('prioritas');
+    const kategoriParam = req.nextUrl.searchParams.get('kategori');
 
-    const where: any = {
+    const where: Prisma.LaporanFasilitasWhereInput = {
       assignedToId: teknisi.id,
     };
 
     // tab filter
     if (tab === 'AKTIF') {
-      where.status = { in: ['DIPROSES', 'DIKERJAKAN'] };
+      where.status = { in: ['DIPROSES', 'DIKERJAKAN'] as StatusLaporan[] };
     } else if (tab === 'SELESAI') {
       where.status = 'SELESAI';
     }
 
     // filter tambahan
-    if (status) where.status = status;
-    if (prioritas) where.prioritas = prioritas;
-    if (kategori) where.kategori = kategori;
+    if (statusParam) where.status = statusParam as StatusLaporan;
+    if (prioritasParam) where.prioritas = prioritasParam as PrioritasLaporan;
+    if (kategoriParam) where.kategori = kategoriParam as KategoriLaporan;
 
     // ambil tasks sesuai filter (tidak diubah)
     const tasks = await prisma.laporanFasilitas.findMany({
@@ -50,7 +56,7 @@ export async function GET(req: NextRequest) {
       prisma.laporanFasilitas.count({
         where: {
           assignedToId: teknisi.id,
-          status: { in: ['DIPROSES', 'DIKERJAKAN'] },
+          status: { in: ['DIPROSES', 'DIKERJAKAN'] as StatusLaporan[] },
         },
       }),
       prisma.laporanFasilitas.count({
@@ -78,13 +84,13 @@ export async function GET(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('GET /teknisi/tasks error:', err);
 
-    if (err?.message === 'UNAUTHENTICATED') {
+    if (err instanceof Error && err.message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (err?.message === 'FORBIDDEN') {
+    if (err instanceof Error && err.message === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

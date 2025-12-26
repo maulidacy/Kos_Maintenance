@@ -69,13 +69,15 @@ export async function POST(
     }
 
     return NextResponse.json({ ok: true, report: updated.report }, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Receive report error:', err);
 
-    if (err?.message === 'UNAUTHENTICATED') {
+    const message = err instanceof Error ? err.message : null;
+
+    if (message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (err?.message === 'FORBIDDEN') {
+    if (message === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

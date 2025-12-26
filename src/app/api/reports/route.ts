@@ -2,9 +2,18 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma, StatusLaporan, KategoriLaporan } from '@prisma/client';
 import { prisma, prismaReplica } from '@/lib/prisma';
 import { requireAuth, requireAdmin } from '@/lib/roleGuard';
 import { createReportSchema } from '@/lib/validation';
+
+function isStatusLaporan(value: string): value is StatusLaporan {
+  return (Object.values(StatusLaporan) as string[]).includes(value);
+}
+
+function isKategoriLaporan(value: string): value is KategoriLaporan {
+  return (Object.values(KategoriLaporan) as string[]).includes(value);
+}
 
 // ======================= GET /api/reports =======================
 export async function GET(req: NextRequest) {
@@ -14,8 +23,8 @@ export async function GET(req: NextRequest) {
       | 'eventual'
       | 'weak';
 
-    const status = req.nextUrl.searchParams.get('status') || undefined;
-    const kategori = req.nextUrl.searchParams.get('kategori') || undefined;
+    const statusParam = req.nextUrl.searchParams.get('status');
+    const kategoriParam = req.nextUrl.searchParams.get('kategori');
     const isAdminList = req.nextUrl.searchParams.get('admin') === '1';
 
     // pagination params (default limit 10 biar ringan dan LCP rendah)
@@ -23,11 +32,7 @@ export async function GET(req: NextRequest) {
     const limitParam = req.nextUrl.searchParams.get('limit');
 
     const page = Math.max(parseInt(pageParam || '1', 10) || 1, 1);
-    const limit = Math.min(
-      Math.max(parseInt(limitParam || '10', 10) || 10, 5),
-      50
-    );
-
+    const limit = Math.min(Math.max(parseInt(limitParam || '10', 10) || 10, 5), 50);
     const skip = (page - 1) * limit;
 
     // auth: kalau admin=1 wajib admin, kalau tidak cukup user biasa
@@ -41,9 +46,17 @@ export async function GET(req: NextRequest) {
     // pilih DB client berdasarkan mode
     const client = mode === 'strong' ? prisma : prismaReplica ?? prisma;
 
-    const where: any = {};
-    if (status) where.status = status;
-    if (kategori) where.kategori = kategori;
+    const where: Prisma.LaporanFasilitasWhereInput = {};
+
+    // filter status hanya kalau param valid enum
+    if (typeof statusParam === 'string' && isStatusLaporan(statusParam)) {
+      where.status = statusParam;
+    }
+
+    // filter kategori hanya kalau param valid enum
+    if (typeof kategoriParam === 'string' && isKategoriLaporan(kategoriParam)) {
+      where.kategori = kategoriParam;
+    }
 
     // user biasa hanya lihat laporan milik sendiri
     if (!isAdminList) {
@@ -95,13 +108,16 @@ export async function GET(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    if (error?.message === 'UNAUTHENTICATED') {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : undefined;
+
+    if (msg === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
     }
-    if (error?.message === 'FORBIDDEN') {
+    if (msg === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
     console.error('Reports GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -112,7 +128,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth(req);
 
-    let raw: any = null;
+    let raw: unknown = null;
     try {
       raw = await req.json();
     } catch {
@@ -126,16 +142,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Body tidak valid' }, { status: 400 });
     }
 
+    const obj = raw as Record<string, unknown>;
+
     // Jika lokasi kosong → default dari nomorKamar user
-    if (!raw.lokasi || typeof raw.lokasi !== 'string' || raw.lokasi.trim() === '') {
-      raw.lokasi = user.nomorKamar || 'Tidak diketahui';
+    const lokasi = obj.lokasi;
+    if (!lokasi || typeof lokasi !== 'string' || lokasi.trim() === '') {
+      obj.lokasi = user.nomorKamar || 'Tidak diketahui';
     }
 
-    const parsed = createReportSchema.safeParse(raw);
+    const parsed = createReportSchema.safeParse(obj);
     if (!parsed.success) {
       const flat = parsed.error.flatten();
       console.error('Create report validation error:', flat);
-      return NextResponse.json({ error: 'Invalid input', details: flat }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid input', details: flat },
+        { status: 400 }
+      );
     }
 
     const data = parsed.data;
@@ -168,10 +190,13 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ report }, { status: 201 });
-  } catch (error: any) {
-    if (error?.message === 'UNAUTHENTICATED') {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : undefined;
+
+    if (msg === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
     }
+
     console.error('Reports POST error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
