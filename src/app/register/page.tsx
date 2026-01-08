@@ -97,7 +97,7 @@ export default function RegisterPage() {
           </h1>
 
           <p className="max-w-md text-sm md:text-base text-slate-300">
-            Dengan akun ini, kamu dapat melaporkan masalah fasilitas, memantau
+            Dengan akun ini, anda dapat melaporkan masalah fasilitas, memantau
             progres perbaikan, dan berkomunikasi dengan admin kos.
           </p>
 
@@ -119,7 +119,7 @@ export default function RegisterPage() {
             <header className="mb-6 space-y-2 text-center">
               <h2 className="text-lg font-semibold">Daftar Penghuni Baru</h2>
               <p className="text-xs text-slate-400">
-                Admin bisa mengubah role kamu menjadi ADMIN jika diperlukan.
+                Admin bisa mengubah role anda menjadi ADMIN/TEKNISI jika diperlukan.
               </p>
             </header>
 

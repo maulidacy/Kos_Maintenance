@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { email, password } = parsed.data;
+    const { email, password, targetRole } = parsed.data;
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -43,6 +43,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'Email atau password salah' },
         { status: 401 },
+      );
+    }
+
+    if (targetRole && user.role !== targetRole) {
+      return NextResponse.json(
+        { error: `Akun ini bukan role ${targetRole}.` },
+        { status: 403 }
       );
     }
 

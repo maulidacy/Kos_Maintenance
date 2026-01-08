@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 type LoginResponse = {
@@ -17,10 +17,22 @@ type LoginResponse = {
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const role = searchParams.get('role') as 'USER' | 'ADMIN' | 'TEKNISI' | null;
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const getTitle = () => {
+        if (role === 'ADMIN') return 'Login Admin';
+        if (role === 'TEKNISI') return 'Login Teknisi';
+        return 'Login User';
+    };
+
+    const getTargetRole = () => {
+        return role || 'USER';
+    };
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -31,7 +43,7 @@ export default function LoginPage() {
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, targetRole: getTargetRole() }),
             });
 
             let data: LoginResponse | null = null;
@@ -72,9 +84,6 @@ export default function LoginPage() {
             <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-10 lg:flex-row lg:items-center">
                 {/* Left intro */}
                 <section className="flex-1 space-y-5">
-                    <div className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-100">
-                        MASUK PENGHUNI / ADMIN
-                    </div>
 
                     <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
                         Selamat datang kembali di{' '}
@@ -100,7 +109,7 @@ export default function LoginPage() {
                 <section className="flex-1">
                     <div className="mx-auto max-w-md rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-xl shadow-emerald-500/20 backdrop-blur">
                         <header className="mb-6 space-y-2 text-center">
-                            <h2 className="text-lg font-semibold">Masuk Akun</h2>
+                            <h2 className="text-lg font-semibold">{getTitle()}</h2>
                             <p className="text-xs text-slate-400">
                                 Gunakan email dan password yang sudah terdaftar.
                             </p>

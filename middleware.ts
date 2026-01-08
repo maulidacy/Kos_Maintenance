@@ -32,12 +32,27 @@ async function verifyJwtEdge(token: string): Promise<JwtPayload | null> {
 export async function middleware(req: NextRequest) {
   try {
     const token = req.cookies.get("token")?.value;
+    const payload = token ? await verifyJwtEdge(token) : null;
+
+    // login pages
+    if (req.nextUrl.pathname.startsWith('/login')) {
+      if (payload) {
+        // redirect logged-in users to their dashboard
+        if (payload.role === 'ADMIN') {
+          return NextResponse.redirect(new URL('/admin/dashboard', req.url));
+        }
+        if (payload.role === 'TEKNISI') {
+          return NextResponse.redirect(new URL('/teknisi/dashboard', req.url));
+        }
+        return NextResponse.redirect(new URL('/reports', req.url));
+      }
+      // allow access to login pages if not logged in
+      return NextResponse.next();
+    }
 
     if (!token) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
-
-    const payload = await verifyJwtEdge(token);
 
     if (!payload) {
       return NextResponse.redirect(new URL("/login", req.url));
@@ -66,5 +81,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/teknisi/:path*"],
+  matcher: ["/admin/:path*", "/teknisi/:path*", "/login-admin", "/login-teknisi", "/login-user", "/login"],
 };

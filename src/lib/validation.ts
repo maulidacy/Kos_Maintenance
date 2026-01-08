@@ -34,6 +34,7 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+  targetRole: z.enum(['USER', 'ADMIN', 'TEKNISI']).optional(),
 });
 
 // ==================================================
